@@ -1,95 +1,105 @@
-import Image from 'next/image'
+'use client'
+import React, { useState, useRef, useEffect } from 'react'
 import styles from './page.module.css'
+const videoURL = "http://localhost:3000/video-exemplo.mp4"
+
+function usePlayerState($videoPlayer: any) {
+  const [playerState, setPlayerState] = useState({
+    playing: false,
+    percentage: 0,
+    playbackRate: 1
+  })
+
+  useEffect(() => {
+    playerState.playing ? $videoPlayer.current?.play() : $videoPlayer.current?.pause();
+
+  }, [$videoPlayer, playerState.playing])
+
+  function toogleVideoPlay() {
+    setPlayerState({
+      ...playerState,
+      playing: !playerState.playing
+    })
+
+  }
+
+  function handleTimeUpdate() {
+    const currentPercentage = ($videoPlayer.current.currentTime / $videoPlayer.current.duration) * 100
+    setPlayerState({
+      ...playerState,
+      percentage: currentPercentage
+    })
+  }
+
+  function handleChangeVideoPercentage(event: any) {
+    const currentPercentageValue = event.target.value;
+    $videoPlayer.current.currentTime = $videoPlayer.current.duration / 100 * currentPercentageValue
+    setPlayerState({
+      ...playerState,
+      percentage: currentPercentageValue
+    })
+  }
+
+  function handlePlaybackRate(event: any) {
+    const playbackRate = event.target.value
+    setPlayerState({
+      ...playerState,
+      playbackRate: playbackRate
+    })
+    $videoPlayer.current.playbackRate = playbackRate
+  }
+  return { playerState, handlePlaybackRate, toogleVideoPlay, handleTimeUpdate, handleChangeVideoPercentage }
+}
+
 
 export default function Home() {
+  const $videoPlayer = useRef(null)
+  const { playerState, handlePlaybackRate, toogleVideoPlay, handleTimeUpdate, handleChangeVideoPercentage } = usePlayerState($videoPlayer);
+
+
   return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>src/app/page.tsx</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <div className={styles.main}>
+      <div className={styles.video}>
+        <video
+          ref={$videoPlayer}
+          className={styles.videoPlayer}
+          src={videoURL}
+          poster="http://localhost:3000/poster.png"
+          onTimeUpdate={handleTimeUpdate}
+        />
+        <div className={styles.controls}>
+          <button
+            onClick={toogleVideoPlay}
+            className={styles.buttonPlay}
           >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+            {playerState.playing ? "Pause" : "Play"}
+          </button>
+          <input
+            className={styles.rangeDuration}
+            type="range"
+            min='0'
+            max='100'
+            onChange={handleChangeVideoPercentage}
+            value={playerState.percentage}
+          />
+          <select
+            className={styles.speedReprodution}
+            id='selectPlaybackRate'
+            name='selectPlaybackRate'
+            onChange={handlePlaybackRate}
+            defaultValue={playerState.playbackRate}
+          >
+            {[0.25, 0.5, 0.75, 1, 2, 3].map(speed => (
+              <option
+                key={`speedChange_${speed}`}
+                value={speed}
+              >
+                {speed}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
-
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore the Next.js 13 playground.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+    </div>
   )
 }
